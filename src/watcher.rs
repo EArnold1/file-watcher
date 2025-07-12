@@ -1,5 +1,6 @@
 use std::{
     path::PathBuf,
+    process,
     sync::mpsc,
     thread,
     time::{Duration, SystemTime},
@@ -50,8 +51,12 @@ pub fn recursive_file_reader(file_path: &str, tx: mpsc::Sender<WatcherEvent>) {
     } else {
         // perform watch in another thread
         // calling the watcher in the main thread will block it and the receiver will still be waiting for the function to finish executing
-        // thread::spawn(|| watcher(file_path, tx));
-        thread::spawn(move || watcher(path, tx));
+        thread::spawn(move || {
+            if let Err(err) = watcher(path, tx) {
+                eprintln!("something went wrong, err: {}", err);
+                process::exit(1) // clean exit
+            }
+        });
         // is spawning a new thread for folders with nested files/folder good ?
     }
 }
